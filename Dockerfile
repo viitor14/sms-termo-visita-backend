@@ -11,6 +11,8 @@ RUN npm install
 # Copia o resto do código da API
 COPY . .
 
+RUN npm run build
+
 # Expõe a porta interna da API
 EXPOSE 3000
 

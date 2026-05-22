@@ -93,4 +93,3 @@ module.exports = {
     await queryInterface.dropTable('chamados');
   },
 };
-s;
