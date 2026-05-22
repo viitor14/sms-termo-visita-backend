@@ -6,26 +6,20 @@ services:
     container_name: api-chamados-node
     restart: always
     ports:
-      # A porta 4000 vai ficar exposta na sua VPS (escolhi essa pois as outras estão em uso)
       - '4000:3000'
-    environment:
-      - DB_HOST=db-chamados
-      - DB_USER=root
-      - DB_PASS=Teotonio
-      - DB_NAME=chamados_db
-      - API_KEY_SECRETA=VM14gs03F03@!
+    env_file:
+      - .env
     depends_on:
       - db-chamados
 
   db-chamados:
-    image: mariadb:latest
-    container_name: db-chamados-mariadb
+    image: mysql:8.0
+    container_name: db-chamados-mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: Teotonio
-      MYSQL_DATABASE: chamados_db
+      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE}
     ports:
-      # O 3306 e 3307 já estão em uso na sua VPS. Vamos usar o 3308 para acessar de fora, se precisar.
       - '3308:3306'
     volumes:
       - chamados_db_data:/var/lib/mysql
