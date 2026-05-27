@@ -1,4 +1,5 @@
 import Chamados from '../models/Chamados';
+import { Sequelize } from 'sequelize';
 
 class ChamadosController {
   // Método para CRIAR ou ATUALIZAR o chamado vindo do app (Sincronização)
@@ -30,7 +31,7 @@ class ChamadosController {
     try {
       const chamados = await Chamados.findAll({
         order: [
-          ['data', 'DESC'],
+          [Sequelize.fn('STR_TO_DATE', Sequelize.col('data'), '%d/%m/%Y'), 'DESC'],
           ['chegada', 'DESC'],
         ],
       });
