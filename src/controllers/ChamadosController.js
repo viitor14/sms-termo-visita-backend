@@ -29,7 +29,10 @@ class ChamadosController {
   async index(req, res) {
     try {
       const chamados = await Chamados.findAll({
-        order: [['created_at', 'DESC']],
+        order: [
+          ['data', 'DESC'],
+          ['chegada', 'DESC'],
+        ],
       });
       return res.json(chamados);
     } catch (error) {
