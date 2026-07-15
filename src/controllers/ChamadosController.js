@@ -12,6 +12,15 @@ class ChamadosController {
       }
 
       const [chamado, created] = await Chamados.upsert(req.body);
+      
+      const io = req.app.get('io');
+      if (io) {
+        if (created) {
+          io.emit('novo_chamado', chamado);
+        } else {
+          io.emit('chamado_atualizado', chamado);
+        }
+      }
 
       return res.status(200).json({
         success: true,
@@ -29,7 +38,14 @@ class ChamadosController {
 
   async index(req, res) {
     try {
+      const { status } = req.query;
+      const where = {};
+      if (status) {
+        where.status = status;
+      }
+      
       const chamados = await Chamados.findAll({
+        where,
         order: [
           [Sequelize.fn('STR_TO_DATE', Sequelize.col('data'), '%d/%m/%Y'), 'DESC'],
           ['chegada', 'DESC'],
@@ -69,9 +85,38 @@ class ChamadosController {
       }
 
       await chamado.update(req.body);
+      
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('chamado_atualizado', chamado);
+      }
+
       return res.json(chamado);
     } catch (error) {
       console.error('Erro ao atualizar chamado:', error);
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+  }
+
+  async delete(req, res) {
+    try {
+      const { id } = req.params;
+      const chamado = await Chamados.findByPk(id);
+
+      if (!chamado) {
+        return res.status(404).json({ error: 'Chamado não encontrado.' });
+      }
+
+      await chamado.destroy();
+      
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('chamado_excluido', id);
+      }
+
+      return res.status(200).json({ success: true, message: 'Chamado excluído com sucesso.' });
+    } catch (error) {
+      console.error('Erro ao excluir chamado:', error);
       return res.status(500).json({ error: 'Erro interno do servidor.' });
     }
   }

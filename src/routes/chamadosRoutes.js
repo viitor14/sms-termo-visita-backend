@@ -10,4 +10,5 @@ router.get('/', chamadosController.index);
 router.post('/', chamadosController.store);
 router.get('/:id', chamadosController.show);
 router.patch('/:id', chamadosController.update);
+router.delete('/:id', chamadosController.delete);
 export default router;

@@ -10,8 +10,9 @@ import cors from 'cors';
 import homeRoutes from './routes/homeRoutes';
 import chamadosRoutes from './routes/chamadosRoutes';
 import tokenRoutes from './routes/tokenRoutes';
+import { applySecurityMiddlewares } from './middlewares/securityConfig';
 
-const whiteList = ['http://localhost:3000'];
+const whiteList = ['http://localhost:3000', 'http://localhost:5173'];
 
 const corsOptions = {
   origin(origin, callback) {
@@ -32,6 +33,10 @@ class App {
 
   middlewares() {
     this.app.use(cors(corsOptions));
+
+    // Aplica as camadas de segurança blindando a aplicação (Security Persona)
+    applySecurityMiddlewares(this.app);
+
     this.app.use(express.json({ limit: '50mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '50mb' }));
   }
