@@ -12,7 +12,7 @@ class ChamadosController {
       }
 
       const [chamado, created] = await Chamados.upsert(req.body);
-      
+
       const io = req.app.get('io');
       if (io) {
         if (created) {
@@ -24,7 +24,7 @@ class ChamadosController {
 
       return res.status(200).json({
         success: true,
-        message: created ? 'Chamado criadoo!' : 'Chamado atualizado!',
+        message: created ? 'Chamado criado com sucesso!' : 'Chamado atualizado!',
         chamado,
       });
     } catch (error) {
@@ -43,7 +43,7 @@ class ChamadosController {
       if (status) {
         where.status = status;
       }
-      
+
       const chamados = await Chamados.findAll({
         where,
         order: [
@@ -85,7 +85,7 @@ class ChamadosController {
       }
 
       await chamado.update(req.body);
-      
+
       const io = req.app.get('io');
       if (io) {
         io.emit('chamado_atualizado', chamado);
@@ -108,7 +108,7 @@ class ChamadosController {
       }
 
       await chamado.destroy();
-      
+
       const io = req.app.get('io');
       if (io) {
         io.emit('chamado_excluido', id);

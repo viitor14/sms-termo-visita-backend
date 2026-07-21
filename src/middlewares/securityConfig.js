@@ -5,7 +5,7 @@ import xss from 'xss-clean';
 // Rate Limiter para prevenir ataques de força bruta ou DoS
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // Limita cada IP a 100 requisições por `window` (15 min)
+  max: 1000, // Limita cada IP a 1000 requisições por `window` (15 min) para evitar falsos positivos no dashboard
   message: {
     error: 'Muitas requisições originadas deste IP, por favor tente novamente mais tarde.'
   },
