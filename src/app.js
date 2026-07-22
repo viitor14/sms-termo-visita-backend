@@ -12,7 +12,7 @@ import chamadosRoutes from './routes/chamadosRoutes';
 import tokenRoutes from './routes/tokenRoutes';
 import { applySecurityMiddlewares } from './middlewares/securityConfig';
 
-const whiteList = ['http://localhost:3000', 'http://localhost:5173'];
+const whiteList = ['http://localhost:3000', 'http://localhost:5173', 'http://31.97.86.253:8082', 'http://31.97.86.253:3005'];
 
 const corsOptions = {
   origin(origin, callback) {
