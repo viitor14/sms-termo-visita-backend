@@ -46,6 +46,7 @@ class ChamadosController {
 
       const chamados = await Chamados.findAll({
         where,
+        attributes: { exclude: ['imgAssinaturaResponsavel', 'imgAssinaturaTecnico'] },
         order: [
           [Sequelize.fn('STR_TO_DATE', Sequelize.col('data'), '%d/%m/%Y'), 'DESC'],
           ['chegada', 'DESC'],
