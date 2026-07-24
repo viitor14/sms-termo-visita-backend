@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Unidades', {
+    await queryInterface.createTable('unidades', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -15,7 +15,7 @@ module.exports = {
       distrito_id: {
         type: Sequelize.INTEGER,
         references: {
-          model: 'Distritos',
+          model: 'distritos',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -32,6 +32,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Unidades');
+    await queryInterface.dropTable('unidades');
   }
 };
