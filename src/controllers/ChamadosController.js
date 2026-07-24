@@ -1,17 +1,55 @@
 import Chamados from '../models/Chamados';
+import Unidades from '../models/unidades';
+import Equipamentos from '../models/equipamentos';
 import { Sequelize } from 'sequelize';
 
 class ChamadosController {
   // Método para CRIAR ou ATUALIZAR o chamado vindo do app (Sincronização)
   async store(req, res) {
     try {
-      const { id } = req.body;
+      const { id, unidade, equipamento, numeroSerie } = req.body;
 
       if (!id) {
         return res.status(400).json({ error: 'O ID do chamado é obrigatório.' });
       }
 
       const [chamado, created] = await Chamados.upsert(req.body);
+
+      // --- Início: Auto-cadastro de Inventário ---
+      try {
+        if (unidade && numeroSerie && numeroSerie.trim() !== '' && numeroSerie.trim().toUpperCase() !== 'NÃO INFORMADO') {
+          // 1. Busca ou cria a unidade
+          const [unidadeRecord] = await Unidades.findOrCreate({
+            where: { nome: unidade.trim() },
+            defaults: { nome: unidade.trim(), distrito_id: null }
+          });
+
+          // 2. Busca ou cria o equipamento, vinculando à unidade
+          const serialFormatado = numeroSerie.trim().toUpperCase();
+          const tipoEquipamento = equipamento ? equipamento.trim() : 'Não Especificado';
+
+          const [equip, equipCreated] = await Equipamentos.findOrCreate({
+            where: { numero_serie: serialFormatado },
+            defaults: {
+              numero_serie: serialFormatado,
+              modelo: tipoEquipamento,
+              tipo: tipoEquipamento,
+              setor: 'Não Especificado',
+              unidade_id: unidadeRecord.id,
+              status_operacional: 'ativo'
+            }
+          });
+          
+          // Se o equipamento já existia mas mudou de unidade, atualiza o vínculo
+          if (!equipCreated && equip.unidade_id !== unidadeRecord.id) {
+            await equip.update({ unidade_id: unidadeRecord.id });
+          }
+        }
+      } catch (invError) {
+        console.error('Erro não-crítico no auto-cadastro de inventário:', invError);
+        // O erro é suprimido para não interromper a resposta de sucesso do chamado
+      }
+      // --- Fim: Auto-cadastro de Inventário ---
 
       const io = req.app.get('io');
       if (io) {

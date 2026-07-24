@@ -10,6 +10,7 @@ import cors from 'cors';
 import homeRoutes from './routes/homeRoutes';
 import chamadosRoutes from './routes/chamadosRoutes';
 import tokenRoutes from './routes/tokenRoutes';
+import inventarioRoutes from './routes/inventarioRoutes';
 import { applySecurityMiddlewares } from './middlewares/securityConfig';
 
 const whiteList = ['http://localhost:3000', 'http://localhost:5173', 'http://31.97.86.253:8082', 'http://31.97.86.253:3005'];
@@ -46,6 +47,7 @@ class App {
     //this.app.use('/users/', userRoutes);
     this.app.use('/chamados', chamadosRoutes);
     this.app.use('/tokens/', tokenRoutes);
+    this.app.use('/inventario', inventarioRoutes);
   }
 }
 
