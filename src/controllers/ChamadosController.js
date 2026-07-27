@@ -117,13 +117,36 @@ class ChamadosController {
   async update(req, res) {
     try {
       const { id } = req.params;
+      const { transferirEquipamento, unidade, ...rest } = req.body;
       const chamado = await Chamados.findByPk(id);
 
       if (!chamado) {
         return res.status(404).json({ error: 'Chamado não encontrado.' });
       }
 
-      await chamado.update(req.body);
+      await chamado.update({ unidade, ...rest });
+
+      // Se o usuário solicitou a transferência do equipamento
+      if (transferirEquipamento && unidade && chamado.numeroSerie && chamado.numeroSerie.trim().toUpperCase() !== 'NÃO INFORMADO') {
+        try {
+          // 1. Busca ou cria a unidade de destino
+          const [unidadeRecord] = await Unidades.findOrCreate({
+            where: { nome: unidade.trim() },
+            defaults: { nome: unidade.trim(), distrito_id: null }
+          });
+          
+          // 2. Busca o equipamento pelo número de série associado ao chamado
+          const serialFormatado = chamado.numeroSerie.trim().toUpperCase();
+          const equip = await Equipamentos.findOne({ where: { numero_serie: serialFormatado }});
+          
+          if (equip && equip.unidade_id !== unidadeRecord.id) {
+            await equip.update({ unidade_id: unidadeRecord.id });
+          }
+        } catch (invError) {
+          console.error('Erro ao transferir inventário no update:', invError);
+          // Suprime erro para não falhar a atualização do chamado
+        }
+      }
 
       const io = req.app.get('io');
       if (io) {
