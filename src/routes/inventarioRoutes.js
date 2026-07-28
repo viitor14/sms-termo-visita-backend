@@ -10,6 +10,7 @@ router.post('/distritos', inventarioController.criarDistrito);
 router.get('/unidades', inventarioController.listarUnidades);
 router.get('/unidades/:id', inventarioController.buscarUnidade);
 router.post('/unidades', inventarioController.criarUnidade);
+router.put('/unidades/:id', inventarioController.atualizarUnidade);
 
 router.post('/equipamentos', inventarioController.criarEquipamento);
 router.put('/equipamentos/:id', inventarioController.atualizarEquipamento);

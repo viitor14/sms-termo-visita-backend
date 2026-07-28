@@ -75,6 +75,27 @@ class InventarioController {
     }
   }
 
+  async atualizarUnidade(req, res) {
+    try {
+      const { id } = req.params;
+      const { nome, distrito_id, endereco, gestora_nome, telefone } = req.body;
+      
+      const unidade = await Unidades.findByPk(id);
+      if (!unidade) return res.status(404).json({ error: 'Unidade não encontrada' });
+      
+      await unidade.update({ 
+        nome, 
+        distrito_id, 
+        endereco, 
+        gestora_nome, 
+        telefone 
+      });
+      return res.status(200).json(unidade);
+    } catch (error) {
+      return res.status(400).json({ error: 'Erro ao atualizar unidade' });
+    }
+  }
+
   // --- EQUIPAMENTOS ---
   async criarEquipamento(req, res) {
     try {
