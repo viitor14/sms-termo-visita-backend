@@ -78,6 +78,11 @@ export default class Chamados extends Model {
           type: Sequelize.JSON,
           allowNull: true,
         },
+        empresaEncaminhada: {
+          type: Sequelize.STRING,
+          field: 'empresa_encaminhada',
+          defaultValue: '',
+        },
       },
       {
         sequelize,

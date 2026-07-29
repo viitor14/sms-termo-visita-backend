@@ -11,7 +11,10 @@ import homeRoutes from './routes/homeRoutes';
 import chamadosRoutes from './routes/chamadosRoutes';
 import tokenRoutes from './routes/tokenRoutes';
 import inventarioRoutes from './routes/inventarioRoutes';
+import userRoutes from './routes/userRoutes';
+import empresaRoutes from './routes/empresaRoutes';
 import { applySecurityMiddlewares } from './middlewares/securityConfig';
+import { seedMasterUser, seedEmpresas } from './database/seeds';
 
 const whiteList = ['http://localhost:3000', 'http://localhost:5173', 'http://31.97.86.253:8082', 'http://31.97.86.253:3005'];
 
@@ -30,6 +33,10 @@ class App {
     this.app = express();
     this.middlewares();
     this.routes();
+    
+    // Roda a seed para garantir que exista pelo menos um usuário master
+    seedMasterUser();
+    seedEmpresas();
   }
 
   middlewares() {
@@ -44,10 +51,11 @@ class App {
 
   routes() {
     this.app.use('/', homeRoutes);
-    //this.app.use('/users/', userRoutes);
+    this.app.use('/users', userRoutes);
     this.app.use('/chamados', chamadosRoutes);
-    this.app.use('/tokens/', tokenRoutes);
+    this.app.use('/tokens', tokenRoutes);
     this.app.use('/inventario', inventarioRoutes);
+    this.app.use('/empresas', empresaRoutes);
   }
 }
 

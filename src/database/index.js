@@ -5,8 +5,9 @@ import Chamados from '../models/Chamados';
 import Distritos from '../models/distritos';
 import Unidades from '../models/unidades';
 import Equipamentos from '../models/equipamentos';
+import Empresa from '../models/Empresa';
 
-const models = [User, Chamados, Distritos, Unidades, Equipamentos];
+const models = [User, Chamados, Distritos, Unidades, Equipamentos, Empresa];
 const connection = new Sequelize(databaseConfig);
 
 /*

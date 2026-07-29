@@ -1,19 +1,21 @@
 import { Router } from 'express';
 import inventarioController from '../controllers/InventarioController';
-// const auth = require('../middlewares/auth'); // Opcional se houver autenticação
+import auth from '../middlewares/auth';
+import roleRequired from '../middlewares/roleRequired';
 
 const router = new Router();
 
-router.get('/distritos', inventarioController.listarDistritos);
-router.post('/distritos', inventarioController.criarDistrito);
+// GET routes (open to all authenticated users)
+router.get('/distritos', auth, inventarioController.listarDistritos);
+router.get('/unidades', auth, inventarioController.listarUnidades);
+router.get('/unidades/:id', auth, inventarioController.buscarUnidade);
 
-router.get('/unidades', inventarioController.listarUnidades);
-router.get('/unidades/:id', inventarioController.buscarUnidade);
-router.post('/unidades', inventarioController.criarUnidade);
-router.put('/unidades/:id', inventarioController.atualizarUnidade);
-
-router.post('/equipamentos', inventarioController.criarEquipamento);
-router.put('/equipamentos/:id', inventarioController.atualizarEquipamento);
-router.delete('/equipamentos/:id', inventarioController.excluirEquipamento);
+// POST, PUT, DELETE routes (restricted to master and gestor)
+router.post('/distritos', auth, roleRequired(['master', 'gestor']), inventarioController.criarDistrito);
+router.post('/unidades', auth, roleRequired(['master', 'gestor']), inventarioController.criarUnidade);
+router.put('/unidades/:id', auth, roleRequired(['master', 'gestor']), inventarioController.atualizarUnidade);
+router.post('/equipamentos', auth, roleRequired(['master', 'gestor']), inventarioController.criarEquipamento);
+router.put('/equipamentos/:id', auth, roleRequired(['master', 'gestor']), inventarioController.atualizarEquipamento);
+router.delete('/equipamentos/:id', auth, roleRequired(['master', 'gestor']), inventarioController.excluirEquipamento);
 
 export default router;

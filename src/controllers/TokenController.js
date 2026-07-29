@@ -7,7 +7,7 @@ class TokenController {
 
     if (!email || !password) {
       return res.status(401).json({
-        errors: ['Credenciais invalidas'],
+        errors: ['Credenciais inválidas'],
       });
     }
 
@@ -25,12 +25,12 @@ class TokenController {
       });
     }
 
-    const { id } = user;
-    const token = jwt.sign({ id, email }, process.env.TOKEN_SECRET, {
+    const { id, nome, role } = user;
+    const token = jwt.sign({ id, email, role }, process.env.TOKEN_SECRET, {
       expiresIn: process.env.TOKEN_EXPIRATION,
     });
 
-    return res.json({ token });
+    return res.json({ token, user: { id, nome, email, role } });
   }
 }
 

@@ -41,6 +41,16 @@ export default class User extends Model {
             },
           },
         },
+        role: {
+          type: Sequelize.STRING,
+          defaultValue: 'tecnico',
+          validate: {
+            isIn: {
+              args: [['master', 'gestor', 'tecnico']],
+              msg: 'Role inválida.',
+            },
+          },
+        },
       },
       {
         sequelize,
