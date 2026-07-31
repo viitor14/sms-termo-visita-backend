@@ -13,6 +13,7 @@ import tokenRoutes from './routes/tokenRoutes';
 import inventarioRoutes from './routes/inventarioRoutes';
 import userRoutes from './routes/userRoutes';
 import empresaRoutes from './routes/empresaRoutes';
+import botRoutes from './routes/botRoutes';
 import { applySecurityMiddlewares } from './middlewares/securityConfig';
 import { seedMasterUser, seedEmpresas } from './database/seeds';
 
@@ -56,6 +57,7 @@ class App {
     this.app.use('/tokens', tokenRoutes);
     this.app.use('/inventario', inventarioRoutes);
     this.app.use('/empresas', empresaRoutes);
+    this.app.use('/webhook', botRoutes);
   }
 }
 
