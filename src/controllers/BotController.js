@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import Requisitante from '../models/Requisitante';
 import Chamados from '../models/Chamados';
 
@@ -47,22 +48,32 @@ class BotController {
         return res.status(400).json({ error: 'Requisitante não encontrado' });
       }
 
-      // O modelo Chamados espera: unidade, tecnico, data, problema, observacao, situacao, empresaEncaminhada
+      const id = crypto.randomUUID();
       const novoChamado = await Chamados.create({
+        id,
         unidade: requisitante.unidade,
         tecnico: 'Sem técnico atribuído',
-        data: new Date().toLocaleDateString('pt-BR'), // Formato esperado pelo front/app (DD/MM/YYYY)
-        problema: problema,
-        situacao: 'Criado via WhatsApp',
-        observacao: `[Bot WhatsApp] - Solicitante: ${requisitante.nome}`,
+        data: new Date().toLocaleDateString('pt-BR'),
+        status: 'aberto',
+        situacao: ['Criado via WhatsApp'],
+        motivos: [problema || 'Suporte solicitado via WhatsApp'],
+        obsTecnicas: `[Bot WhatsApp]\nSolicitante: ${requisitante.nome}\nTelefone: ${telefone}\nProblema: ${problema}`,
+        responsavelNome: requisitante.nome,
+        responsavelCargo: 'Requisitante',
       });
+
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('novo_chamado', novoChamado);
+      }
 
       return res.json({ success: true, chamado: novoChamado });
     } catch (e) {
-      console.error(e);
-      return res.status(500).json({ error: 'Erro ao criar chamado via bot' });
+      console.error('Erro ao criar chamado via bot:', e);
+      return res.status(500).json({ error: 'Erro ao criar chamado via bot', details: e.message });
     }
   }
 }
 
 export default new BotController();
+
