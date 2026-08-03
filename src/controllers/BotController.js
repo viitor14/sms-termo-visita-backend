@@ -41,11 +41,24 @@ class BotController {
 
   async criarChamado(req, res) {
     try {
-      const { telefone, problema } = req.body;
+      const { telefone, problema, nome, unidade } = req.body;
       
-      const requisitante = await Requisitante.findOne({ where: { telefone } });
+      let requisitante = await Requisitante.findOne({ where: { telefone } });
+      
+      // Auto-cadastro caso o requisitante ainda não exista no banco
       if (!requisitante) {
-        return res.status(400).json({ error: 'Requisitante não encontrado' });
+        if (nome && unidade) {
+          requisitante = await Requisitante.create({
+            telefone,
+            nome: nome.trim(),
+            unidade: unidade.trim(),
+          });
+        } else {
+          return res.status(400).json({ error: 'Requisitante não encontrado e dados de nome/unidade não fornecidos' });
+        }
+      } else if (unidade && requisitante.unidade !== unidade.trim()) {
+        // Atualiza a unidade caso o usuário tenha sido transferido de posto
+        await requisitante.update({ unidade: unidade.trim() });
       }
 
       const id = crypto.randomUUID();
@@ -67,7 +80,7 @@ class BotController {
         io.emit('novo_chamado', novoChamado);
       }
 
-      return res.json({ success: true, chamado: novoChamado });
+      return res.json({ success: true, chamado: novoChamado, requisitante });
     } catch (e) {
       console.error('Erro ao criar chamado via bot:', e);
       return res.status(500).json({ error: 'Erro ao criar chamado via bot', details: e.message });
@@ -76,4 +89,5 @@ class BotController {
 }
 
 export default new BotController();
+
 
