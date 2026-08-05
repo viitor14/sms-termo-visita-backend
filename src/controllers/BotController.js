@@ -19,7 +19,7 @@ async function validarOuEncontrarUnidade(nomeUnidade) {
   });
   if (unit) return unit;
 
-  // 2. Busca parcial (LIKE)
+  // 2. Busca parcial direta
   unit = await Unidades.findOne({
     where: {
       nome: { [Op.like]: `%${cleanName}%` },
@@ -27,15 +27,24 @@ async function validarOuEncontrarUnidade(nomeUnidade) {
   });
   if (unit) return unit;
 
-  // 3. Normalização de prefixos comuns (ex: "UPA de Ipojuca" -> "Ipojuca", "UBS Centro" -> "Centro")
-  const words = cleanName.split(/\s+/).filter(w => w.length > 3 && !['posto', 'unidade', 'saude', 'secretaria'].includes(w.toLowerCase()));
+  // 3. Normalização de termos específicos (ex: "Camela", "Serrambi", "Porto de Galinhas", "Carozita", "Santo Cristo")
+  const stopWords = ['posto', 'unidade', 'saude', 'secretaria', 'ipojuca', 'distrito', 'rede', 'municipal', 'brasil', 'aqui', 'estou', 'upa', 'usf', 'ubs', 'spa', 'policlinica', 'centro'];
+  const words = cleanName.split(/\s+/).filter(w => w.length >= 2 && !stopWords.includes(w.toLowerCase()));
   for (const word of words) {
-    unit = await Unidades.findOne({
+    const candidate = await Unidades.findOne({
       where: {
         nome: { [Op.like]: `%${word}%` },
       },
     });
-    if (unit) return unit;
+    if (candidate) {
+      const lowerClean = cleanName.toLowerCase();
+      const lowerCandidate = candidate.nome.toLowerCase();
+      if (lowerClean.includes('upa') && !lowerCandidate.includes('upa')) continue;
+      if (lowerClean.includes('policlinica') && !lowerCandidate.includes('policl')) continue;
+      if (lowerClean.includes('usf') && !lowerCandidate.includes('usf')) continue;
+      if (lowerClean.includes('spa') && !lowerCandidate.includes('spa')) continue;
+      return candidate;
+    }
   }
 
   return null;
