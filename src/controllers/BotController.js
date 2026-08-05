@@ -1,8 +1,68 @@
 import crypto from 'crypto';
+import Sequelize, { Op } from 'sequelize';
 import Requisitante from '../models/Requisitante';
 import Chamados from '../models/Chamados';
+import Unidades from '../models/unidades';
+import Distritos from '../models/distritos';
+
+async function validarOuEncontrarUnidade(nomeUnidade) {
+  if (!nomeUnidade) return null;
+  const cleanName = String(nomeUnidade).trim();
+  if (!cleanName) return null;
+
+  // 1. Busca exata (case insensitive)
+  let unit = await Unidades.findOne({
+    where: Sequelize.where(
+      Sequelize.fn('LOWER', Sequelize.col('nome')),
+      cleanName.toLowerCase()
+    ),
+  });
+  if (unit) return unit;
+
+  // 2. Busca parcial (LIKE)
+  unit = await Unidades.findOne({
+    where: {
+      nome: { [Op.like]: `%${cleanName}%` },
+    },
+  });
+  if (unit) return unit;
+
+  // 3. Normalização de prefixos comuns (ex: "UPA de Ipojuca" -> "Ipojuca", "UBS Centro" -> "Centro")
+  const words = cleanName.split(/\s+/).filter(w => w.length > 3 && !['posto', 'unidade', 'saude', 'secretaria'].includes(w.toLowerCase()));
+  for (const word of words) {
+    unit = await Unidades.findOne({
+      where: {
+        nome: { [Op.like]: `%${word}%` },
+      },
+    });
+    if (unit) return unit;
+  }
+
+  return null;
+}
 
 class BotController {
+  async listarUnidades(req, res) {
+    try {
+      const unidades = await Unidades.findAll({
+        attributes: ['id', 'nome'],
+        include: [{ model: Distritos, as: 'distrito', attributes: ['nome'] }],
+        order: [['nome', 'ASC']],
+      });
+      return res.json({
+        total: unidades.length,
+        unidades: unidades.map(u => ({
+          id: u.id,
+          nome: u.nome,
+          distrito: u.distrito ? u.distrito.nome : 'Sem distrito',
+        })),
+      });
+    } catch (e) {
+      console.error('Erro ao listar unidades para o bot:', e);
+      return res.status(500).json({ error: 'Erro ao listar unidades' });
+    }
+  }
+
   async verificarUsuario(req, res) {
     try {
       const { telefone } = req.body;
@@ -30,7 +90,20 @@ class BotController {
         return res.status(400).json({ error: 'Dados incompletos' });
       }
 
-      const requisitante = await Requisitante.create({ telefone, nome, unidade });
+      const unidadeValida = await validarOuEncontrarUnidade(unidade);
+      if (!unidadeValida) {
+        const todasUnidades = await Unidades.findAll({ attributes: ['nome'], limit: 10 });
+        return res.status(422).json({
+          error: 'Unidade não encontrada no cadastro oficial da Secretaria de Saúde.',
+          unidades_sugeridas: todasUnidades.map(u => u.nome),
+        });
+      }
+
+      const requisitante = await Requisitante.create({
+        telefone,
+        nome: String(nome).trim(),
+        unidade: unidadeValida.nome,
+      });
       
       return res.json({ success: true, requisitante });
     } catch (e) {
@@ -59,20 +132,36 @@ class BotController {
       
       let requisitante = await Requisitante.findOne({ where: { telefone } });
       
+      // Se veio unidade informada, validar contra o cadastro oficial
+      let unidadeOficialNome = null;
+      if (unidade) {
+        const unidadeEncontrada = await validarOuEncontrarUnidade(unidade);
+        if (unidadeEncontrada) {
+          unidadeOficialNome = unidadeEncontrada.nome;
+        } else if (!requisitante) {
+          const todasUnidades = await Unidades.findAll({ attributes: ['nome'], limit: 10 });
+          return res.status(422).json({
+            error: 'Unidade não encontrada no cadastro oficial da Secretaria de Saúde.',
+            unidade_informada: unidade,
+            unidades_sugeridas: todasUnidades.map(u => u.nome),
+          });
+        }
+      }
+
       // Auto-cadastro caso o requisitante ainda não exista no banco
       if (!requisitante) {
-        if (nome && unidade) {
+        if (nome && unidadeOficialNome) {
           requisitante = await Requisitante.create({
             telefone,
             nome: String(nome).trim(),
-            unidade: String(unidade).trim(),
+            unidade: unidadeOficialNome,
           });
         } else {
-          return res.status(400).json({ error: 'Requisitante não encontrado e dados de nome/unidade não fornecidos' });
+          return res.status(400).json({ error: 'Requisitante não encontrado e dados de nome/unidade válidos não fornecidos' });
         }
-      } else if (unidade && requisitante.unidade !== String(unidade).trim()) {
+      } else if (unidadeOficialNome && requisitante.unidade !== unidadeOficialNome) {
         // Atualiza a unidade caso o usuário tenha sido transferido de posto
-        await requisitante.update({ unidade: String(unidade).trim() });
+        await requisitante.update({ unidade: unidadeOficialNome });
       }
 
       const unidadeFinal = setor 
@@ -85,7 +174,7 @@ class BotController {
       if (urgencia) situacaoTags.push(`Prioridade ${String(urgencia).toUpperCase()}`);
 
       const obsBloco = [
-        '[Bot WhatsApp - Triagem RAG]',
+        '[Bot WhatsApp - Triagem RAG & Segurança]',
         `Solicitante: ${requisitante.nome}`,
         `Telefone: ${telefone}`,
         `Unidade: ${unidadeFinal}`,
@@ -125,5 +214,3 @@ class BotController {
 }
 
 export default new BotController();
-
-

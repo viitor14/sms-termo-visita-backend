@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import BotController from '../controllers/BotController';
 
-// Pode ser necessário importar o apiLimiter de segurança aqui, ou aplicar na app.js
 const routes = new Router();
+
+// Endpoint para n8n listar unidades de saúde oficiais
+routes.get('/bot/unidades', BotController.listarUnidades);
 
 // Endpoint para n8n validar usuário
 routes.post('/bot/verificar', BotController.verificarUsuario);
