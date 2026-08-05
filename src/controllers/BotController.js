@@ -41,7 +41,21 @@ class BotController {
 
   async criarChamado(req, res) {
     try {
-      const { telefone, problema, nome, unidade } = req.body;
+      const {
+        telefone,
+        problema,
+        nome,
+        unidade,
+        setor,
+        equipamento,
+        categoria,
+        urgencia,
+        tentativa_rag,
+      } = req.body;
+
+      if (!telefone) {
+        return res.status(400).json({ error: 'Telefone é obrigatório' });
+      }
       
       let requisitante = await Requisitante.findOne({ where: { telefone } });
       
@@ -50,27 +64,49 @@ class BotController {
         if (nome && unidade) {
           requisitante = await Requisitante.create({
             telefone,
-            nome: nome.trim(),
-            unidade: unidade.trim(),
+            nome: String(nome).trim(),
+            unidade: String(unidade).trim(),
           });
         } else {
           return res.status(400).json({ error: 'Requisitante não encontrado e dados de nome/unidade não fornecidos' });
         }
-      } else if (unidade && requisitante.unidade !== unidade.trim()) {
+      } else if (unidade && requisitante.unidade !== String(unidade).trim()) {
         // Atualiza a unidade caso o usuário tenha sido transferido de posto
-        await requisitante.update({ unidade: unidade.trim() });
+        await requisitante.update({ unidade: String(unidade).trim() });
       }
 
+      const unidadeFinal = setor 
+        ? `${requisitante.unidade} - Setor ${String(setor).trim()}`
+        : requisitante.unidade;
+
       const id = crypto.randomUUID();
+      const situacaoTags = ['Criado via WhatsApp'];
+      if (categoria) situacaoTags.push(String(categoria).trim());
+      if (urgencia) situacaoTags.push(`Prioridade ${String(urgencia).toUpperCase()}`);
+
+      const obsBloco = [
+        '[Bot WhatsApp - Triagem RAG]',
+        `Solicitante: ${requisitante.nome}`,
+        `Telefone: ${telefone}`,
+        `Unidade: ${unidadeFinal}`,
+        setor ? `Setor Específico: ${setor}` : null,
+        categoria ? `Categoria: ${categoria}` : null,
+        equipamento ? `Equipamento: ${equipamento}` : null,
+        urgencia ? `Urgência: ${urgencia}` : null,
+        `Problema Relatado: ${problema || 'Suporte solicitado via WhatsApp'}`,
+        tentativa_rag ? `Tentativa Nível 1 (RAG): ${tentativa_rag}` : null,
+      ].filter(Boolean).join('\n');
+
       const novoChamado = await Chamados.create({
         id,
-        unidade: requisitante.unidade,
+        unidade: unidadeFinal,
+        equipamento: equipamento ? String(equipamento).trim() : '',
         tecnico: 'Sem técnico atribuído',
         data: new Date().toLocaleDateString('pt-BR'),
-        status: 'aberto',
-        situacao: ['Criado via WhatsApp'],
+        status: 'pendente',
+        situacao: situacaoTags,
         motivos: [problema || 'Suporte solicitado via WhatsApp'],
-        obsTecnicas: `[Bot WhatsApp]\nSolicitante: ${requisitante.nome}\nTelefone: ${telefone}\nProblema: ${problema}`,
+        obsTecnicas: obsBloco,
         responsavelNome: requisitante.nome,
         responsavelCargo: 'Requisitante',
       });
