@@ -168,14 +168,23 @@ class BotController {
         } else {
           return res.status(400).json({ error: 'Requisitante não encontrado e dados de nome/unidade válidos não fornecidos' });
         }
-      } else if (unidadeOficialNome && requisitante.unidade !== unidadeOficialNome) {
-        // Atualiza a unidade caso o usuário tenha sido transferido de posto
-        await requisitante.update({ unidade: unidadeOficialNome });
+      } else {
+        const updateData = {};
+        if (unidadeOficialNome && requisitante.unidade !== unidadeOficialNome) {
+          updateData.unidade = unidadeOficialNome;
+        }
+        if (nome && String(nome).trim() !== 'Solicitante' && requisitante.nome !== String(nome).trim()) {
+          updateData.nome = String(nome).trim();
+        }
+        if (Object.keys(updateData).length > 0) {
+          await requisitante.update(updateData);
+        }
       }
 
+      const unidadeBase = unidadeOficialNome || (requisitante ? requisitante.unidade : 'Secretaria de Saúde');
       const unidadeFinal = setor 
-        ? `${requisitante.unidade} - Setor ${String(setor).trim()}`
-        : requisitante.unidade;
+        ? `${unidadeBase} - Setor ${String(setor).trim()}`
+        : unidadeBase;
 
       const id = crypto.randomUUID();
       const situacaoTags = ['Criado via WhatsApp'];
