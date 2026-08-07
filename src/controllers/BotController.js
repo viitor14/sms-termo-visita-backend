@@ -186,6 +186,30 @@ class BotController {
         ? `${unidadeBase} - Setor ${String(setor).trim()}`
         : unidadeBase;
 
+      // Normalização inteligente e sanitização do problema técnico (evita frases de conversa como 'fiz isso e nao voltou')
+      let problemaFormatado = problema ? String(problema).trim() : '';
+      const isVague = !problemaFormatado || /^(fiz|tentei|ja fiz|continua|nao deu|nao foi|continua sem funcionar|nao funcionou|nao resolveu|nao voltou|ok|ola|bom dia|boa tarde)/i.test(problemaFormatado);
+
+      if (isVague) {
+        if (categoria && /rede|internet|conectividade/i.test(categoria)) {
+          if (setor && !/geral|unidade/i.test(setor)) {
+            problemaFormatado = `Computador do setor ${setor} sem internet`;
+          } else {
+            problemaFormatado = 'Unidade sem Internet';
+          }
+        } else if (categoria && /impressora/i.test(categoria)) {
+          problemaFormatado = (equipamento && equipamento !== 'Geral')
+            ? `${equipamento} com defeito / sem imprimir`
+            : 'Impressora com defeito';
+        } else if (categoria && /sistema|esus|pec/i.test(categoria)) {
+          problemaFormatado = 'Instabilidade no Sistema e-SUS / PEC';
+        } else if (equipamento && equipamento !== 'Geral') {
+          problemaFormatado = `${equipamento} com defeito relatado`;
+        } else {
+          problemaFormatado = 'Suporte Técnico - Manutenção Presencial';
+        }
+      }
+
       const id = crypto.randomUUID();
       const situacaoTags = ['Criado via WhatsApp'];
       if (categoria) situacaoTags.push(String(categoria).trim());
@@ -200,7 +224,8 @@ class BotController {
         categoria ? `Categoria: ${categoria}` : null,
         equipamento ? `Equipamento: ${equipamento}` : null,
         urgencia ? `Urgência: ${urgencia}` : null,
-        `Problema Relatado: ${problema || 'Suporte solicitado via WhatsApp'}`,
+        `Problema Técnico: ${problemaFormatado}`,
+        problema && problema !== problemaFormatado ? `Mensagem Original do Solicitante: ${problema}` : null,
         tentativa_rag ? `Tentativa Nível 1 (RAG): ${tentativa_rag}` : null,
       ].filter(Boolean).join('\n');
 
@@ -212,7 +237,7 @@ class BotController {
         data: new Date().toLocaleDateString('pt-BR'),
         status: 'pendente',
         situacao: situacaoTags,
-        motivos: [problema || 'Suporte solicitado via WhatsApp'],
+        motivos: [problemaFormatado],
         obsTecnicas: obsBloco,
         responsavelNome: requisitante.nome,
         responsavelCargo: 'Requisitante',
