@@ -29,7 +29,19 @@ async function validarOuEncontrarUnidade(nomeUnidade) {
 
   // 3. Normalização de termos específicos (ex: "Camela", "Serrambi", "Porto de Galinhas", "Carozita", "Santo Cristo")
   const stopWords = ['posto', 'unidade', 'saude', 'secretaria', 'ipojuca', 'distrito', 'rede', 'municipal', 'brasil', 'aqui', 'estou', 'upa', 'usf', 'ubs', 'spa', 'policlinica', 'centro'];
-  const words = cleanName.split(/\s+/).filter(w => w.length >= 2 && !stopWords.includes(w.toLowerCase()));
+  
+  // Exceção direta para "Secretaria de Saúde" (ignorando acentuação)
+  const normalizedClean = cleanName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (normalizedClean === 'secretaria de saude' || normalizedClean === 'sede' || normalizedClean === 'sms') {
+    const sede = await Unidades.findOne({
+      where: {
+        nome: { [Op.like]: '%Secretaria%Sa%de%' },
+      },
+    });
+    if (sede) return sede;
+  }
+
+  const words = cleanName.split(/\s+/).filter(w => w.length > 2 && !stopWords.includes(w.toLowerCase()));
   for (const word of words) {
     const candidate = await Unidades.findOne({
       where: {
