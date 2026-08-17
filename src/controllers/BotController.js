@@ -145,6 +145,7 @@ class BotController {
         categoria,
         urgencia,
         tentativa_rag,
+        acao,
       } = req.body;
 
       if (!telefone) {
@@ -223,7 +224,13 @@ class BotController {
       }
 
       const id = crypto.randomUUID();
+      const isResolvedByIA = (acao === 'resolver_chamado_ia');
       const situacaoTags = ['Criado via WhatsApp'];
+      
+      if (isResolvedByIA) {
+        situacaoTags.push('Resolvido pela IA');
+      }
+      
       if (categoria) situacaoTags.push(String(categoria).trim());
       if (urgencia) situacaoTags.push(`Prioridade ${String(urgencia).toUpperCase()}`);
 
@@ -245,9 +252,9 @@ class BotController {
         id,
         unidade: unidadeFinal,
         equipamento: equipamento ? String(equipamento).trim() : '',
-        tecnico: 'Sem técnico atribuído',
+        tecnico: isResolvedByIA ? 'Via (Inteligência Artificial)' : 'Sem técnico atribuído',
         data: new Date().toLocaleDateString('pt-BR'),
-        status: 'pendente',
+        status: isResolvedByIA ? 'concluido' : 'pendente',
         situacao: situacaoTags,
         motivos: [problemaFormatado],
         obsTecnicas: obsBloco,
