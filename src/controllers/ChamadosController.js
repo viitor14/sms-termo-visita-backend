@@ -181,6 +181,52 @@ class ChamadosController {
       console.error('Erro ao excluir chamado:', error);
       return res.status(500).json({ error: 'Erro interno do servidor.' });
     }
+  async showPublic(req, res) {
+    try {
+      const { id } = req.params;
+
+      const chamado = await Chamados.findByPk(id, {
+        attributes: ['id', 'unidade', 'servico', 'equipamento', 'data', 'chegada', 'tecnico', 'status'],
+      });
+
+      if (!chamado) {
+        return res.status(404).json({ error: 'Chamado não encontrado.' });
+      }
+
+      return res.json(chamado);
+    } catch (error) {
+      console.error('Erro ao buscar detalhe público do chamado:', error);
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+  }
+
+  async assinarPublic(req, res) {
+    try {
+      const { id } = req.params;
+      const { responsavelNome, responsavelCargo, imgAssinaturaResponsavel } = req.body;
+      const chamado = await Chamados.findByPk(id);
+
+      if (!chamado) {
+        return res.status(404).json({ error: 'Chamado não encontrado.' });
+      }
+
+      await chamado.update({
+        responsavelNome,
+        responsavelCargo,
+        imgAssinaturaResponsavel,
+        status: 'concluido'
+      });
+
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('chamado_atualizado', chamado);
+      }
+
+      return res.status(200).json({ success: true, message: 'Assinatura recebida com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao salvar assinatura pública do chamado:', error);
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
   }
 }
 

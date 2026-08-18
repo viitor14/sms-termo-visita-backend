@@ -5,6 +5,10 @@ import roleRequired from '../middlewares/roleRequired';
 
 const router = new Router();
 
+// Rotas públicas (assinatura remota)
+router.get('/public/:id', chamadosController.showPublic);
+router.post('/public/:id/assinar', chamadosController.assinarPublic);
+
 router.use(auth);
 
 router.get('/', chamadosController.index);
