@@ -39,6 +39,7 @@ async function validarOuEncontrarUnidade(nomeUnidade) {
       },
     });
     if (sede) return sede;
+    return { nome: 'Secretaria de Saúde' };
   }
 
   const words = cleanName.split(/\s+/).filter(w => w.length > 2 && !stopWords.includes(w.toLowerCase()));
@@ -192,6 +193,11 @@ class BotController {
         if (Object.keys(updateData).length > 0) {
           await requisitante.update(updateData);
         }
+      }
+
+      // Tratamento especial para apenas corrigir unidade/setor
+      if (acao === 'corrigir_unidade' || acao === 'atualizar_unidade') {
+        return res.json({ success: true, updated: true, requisitante });
       }
 
       const unidadeBase = unidadeOficialNome || (requisitante ? requisitante.unidade : 'Secretaria de Saúde');
