@@ -15,5 +15,6 @@ router.get('/', chamadosController.index);
 router.post('/', roleRequired(['master', 'gestor', 'tecnico']), chamadosController.store);
 router.get('/:id', chamadosController.show);
 router.patch('/:id', chamadosController.update);
+router.post('/:id/enviar-link-assinatura', roleRequired(['master', 'gestor', 'tecnico']), chamadosController.enviarLinkAssinatura);
 router.delete('/:id', roleRequired(['master', 'gestor', 'tecnico']), chamadosController.delete);
 export default router;
