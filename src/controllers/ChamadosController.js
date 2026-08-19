@@ -255,7 +255,8 @@ class ChamadosController {
       const urlAssinatura = `${baseUrl}/assinatura/index.html?id=${chamado.id}`;
       const mensagem = `Olá! Sou a Via, Assistente Virtual da SMS Ipojuca.\n\nSegue o link para assinar o termo de visita técnica do chamado concluído:\n${urlAssinatura}`;
 
-      const evolutionApiUrl = 'http://localhost:8080/message/sendText/suporte-chamados';
+      const evolutionBaseUrl = process.env.EVOLUTION_API_URL || 'http://localhost:8080';
+      const evolutionApiUrl = `${evolutionBaseUrl}/message/sendText/suporte-chamados`;
 
       await axios.post(
         evolutionApiUrl,
@@ -265,7 +266,7 @@ class ChamadosController {
         },
         {
           headers: {
-            apikey: 'vitor123'
+            apikey: process.env.EVOLUTION_API_KEY || 'vitor123'
           }
         }
       );
