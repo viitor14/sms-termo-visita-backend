@@ -250,7 +250,7 @@ class ChamadosController {
       const numeroLimpo = telefone.replace(/\D/g, '');
       const IP_API = process.env.APP_URL || 'http://localhost';
       const PORT = process.env.APP_PORT || 3000;
-      const baseUrl = `${IP_API}:${PORT}`;
+      const baseUrl = process.env.PUBLIC_URL || `${IP_API}:${PORT}`;
 
       const urlAssinatura = `${baseUrl}/assinatura/index.html?id=${chamado.id}`;
       const mensagem = `Olá! Sou a Via, Assistente Virtual da SMS Ipojuca.\n\nSegue o link para assinar o termo de visita técnica do chamado concluído:\n${urlAssinatura}`;
