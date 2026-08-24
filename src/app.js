@@ -19,7 +19,10 @@ import path from 'path';
 import { applySecurityMiddlewares } from './middlewares/securityConfig';
 import { seedMasterUser, seedEmpresas } from './database/seeds';
 
-const whiteList = ['http://localhost:3000', 'http://localhost:5173', 'http://31.97.86.253:8082', 'http://31.97.86.253:3005'];
+const whiteList = ['http://localhost:3000', 'http://localhost:5173', 'http://31.97.86.253:8082', 'http://31.97.86.253:3005', 'http://31.97.86.253:4000'];
+if (process.env.PUBLIC_URL) {
+  whiteList.push(process.env.PUBLIC_URL);
+}
 
 const corsOptions = {
   origin(origin, callback) {
