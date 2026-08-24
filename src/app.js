@@ -14,6 +14,8 @@ import inventarioRoutes from './routes/inventarioRoutes';
 import userRoutes from './routes/userRoutes';
 import empresaRoutes from './routes/empresaRoutes';
 import botRoutes from './routes/botRoutes';
+import path from 'path';
+
 import { applySecurityMiddlewares } from './middlewares/securityConfig';
 import { seedMasterUser, seedEmpresas } from './database/seeds';
 
@@ -45,6 +47,8 @@ class App {
 
     // Aplica as camadas de segurança blindando a aplicação (Security Persona)
     applySecurityMiddlewares(this.app);
+
+    this.app.use('/assinatura', express.static(path.resolve(__dirname, '..', 'public')));
 
     this.app.use(express.json({ limit: '50mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '50mb' }));

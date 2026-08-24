@@ -2,6 +2,7 @@ import Chamados from '../models/Chamados';
 import Unidades from '../models/unidades';
 import Equipamentos from '../models/equipamentos';
 import { Sequelize } from 'sequelize';
+import axios from 'axios';
 
 class ChamadosController {
   // Método para CRIAR ou ATUALIZAR o chamado vindo do app (Sincronização)
@@ -180,6 +181,101 @@ class ChamadosController {
     } catch (error) {
       console.error('Erro ao excluir chamado:', error);
       return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+  }
+
+  async showPublic(req, res) {
+    try {
+      const { id } = req.params;
+
+      const chamado = await Chamados.findByPk(id, {
+        attributes: ['id', 'unidade', 'servico', 'equipamento', 'data', 'chegada', 'tecnico', 'status'],
+      });
+
+      if (!chamado) {
+        return res.status(404).json({ error: 'Chamado não encontrado.' });
+      }
+
+      return res.json(chamado);
+    } catch (error) {
+      console.error('Erro ao buscar detalhe público do chamado:', error);
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+  }
+
+  async assinarPublic(req, res) {
+    try {
+      const { id } = req.params;
+      const { responsavelNome, responsavelCargo, imgAssinaturaResponsavel } = req.body;
+      const chamado = await Chamados.findByPk(id);
+
+      if (!chamado) {
+        return res.status(404).json({ error: 'Chamado não encontrado.' });
+      }
+
+      await chamado.update({
+        responsavelNome,
+        responsavelCargo,
+        imgAssinaturaResponsavel,
+        status: 'concluido'
+      });
+
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('chamado_atualizado', chamado);
+      }
+
+      return res.status(200).json({ success: true, message: 'Assinatura recebida com sucesso!' });
+    } catch (error) {
+      console.error('Erro ao salvar assinatura pública do chamado:', error);
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+  }
+
+  async enviarLinkAssinatura(req, res) {
+    try {
+      const { id } = req.params;
+      const { telefone } = req.body;
+
+      if (!telefone || telefone.length < 10) {
+        return res.status(400).json({ error: 'Telefone inválido ou não fornecido.' });
+      }
+
+      const chamado = await Chamados.findByPk(id);
+
+      if (!chamado) {
+        return res.status(404).json({ error: 'Chamado não encontrado.' });
+      }
+
+      const numeroLimpo = telefone.replace(/\D/g, '');
+      const IP_API = process.env.APP_URL || 'http://localhost';
+      const PORT = process.env.APP_PORT || 3000;
+      const baseUrl = `${IP_API}:${PORT}`;
+
+      const urlAssinatura = `${baseUrl}/assinatura/index.html?id=${chamado.id}`;
+      const mensagem = `Olá! Sou a Via, Assistente Virtual da SMS Ipojuca.\n\nSegue o link para assinar o termo de visita técnica do chamado concluído:\n${urlAssinatura}`;
+
+      const evolutionBaseUrl = process.env.EVOLUTION_API_URL || 'http://localhost:8080';
+      const evolutionApiUrl = `${evolutionBaseUrl}/message/sendText/suporte-chamados`;
+
+      await axios.post(
+        evolutionApiUrl,
+        {
+          number: `55${numeroLimpo}`,
+          text: mensagem
+        },
+        {
+          headers: {
+            apikey: process.env.EVOLUTION_API_KEY || 'vitor123'
+          }
+        }
+      );
+
+      return res.status(200).json({ success: true, message: 'Link de assinatura enviado com sucesso pela Via!' });
+
+    } catch (error) {
+      console.error('Erro ao enviar link de assinatura via Evolution API:', error);
+      return res.status(500).json({ error: 'Erro interno ao enviar a mensagem.' });
     }
   }
 }
