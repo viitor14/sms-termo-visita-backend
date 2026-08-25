@@ -252,7 +252,18 @@ class ChamadosController {
       const PORT = process.env.APP_PORT || 3000;
       const baseUrl = process.env.PUBLIC_URL || `${IP_API}:${PORT}`;
 
-      const urlAssinatura = `${baseUrl}/assinatura/index.html?id=${chamado.id}`;
+      const originalUrl = `${baseUrl}/assinatura/index.html?id=${chamado.id}`;
+      let urlAssinatura = originalUrl;
+      
+      try {
+        const shortUrlResponse = await axios.get(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(originalUrl)}`);
+        if (shortUrlResponse.data) {
+          urlAssinatura = shortUrlResponse.data;
+        }
+      } catch (err) {
+        console.error('Erro ao gerar link encurtado:', err.message);
+      }
+
       const mensagem = `Olá! Sou a Via, Assistente Virtual da SMS Ipojuca.\n\nSegue o link para assinar o termo de visita técnica do chamado concluído:\n${urlAssinatura}`;
 
       const evolutionBaseUrl = process.env.EVOLUTION_API_URL || 'http://localhost:8080';
