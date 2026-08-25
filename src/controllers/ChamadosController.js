@@ -264,7 +264,7 @@ class ChamadosController {
         console.error('Erro ao gerar link encurtado:', err.message);
       }
 
-      const mensagem = `Olá! Sou a Via, Assistente Virtual da SMS Ipojuca.\n\nSegue o link para assinar o termo de visita técnica do chamado concluído:\n${urlAssinatura}`;
+      const mensagem = `Olá! Sou a Via, Assistente Virtual da SMS Ipojuca.\n\nSegue o link para assinar o termo de visita técnica do chamado concluído:\n${urlAssinatura}\n\n*Atenção:* Ao acessar e assinar o termo, você confirma que o técnico esteve presente na unidade e que o chamado solicitado foi resolvido.`;
 
       const evolutionBaseUrl = process.env.EVOLUTION_API_URL || 'http://localhost:8080';
       const evolutionApiUrl = `${evolutionBaseUrl}/message/sendText/suporte-chamados`;
