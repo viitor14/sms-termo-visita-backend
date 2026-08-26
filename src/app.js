@@ -14,6 +14,7 @@ import inventarioRoutes from './routes/inventarioRoutes';
 import userRoutes from './routes/userRoutes';
 import empresaRoutes from './routes/empresaRoutes';
 import botRoutes from './routes/botRoutes';
+import pushTokenRoutes from './routes/pushTokenRoutes';
 import path from 'path';
 
 import { applySecurityMiddlewares } from './middlewares/securityConfig';
@@ -65,6 +66,7 @@ class App {
     this.app.use('/inventario', inventarioRoutes);
     this.app.use('/empresas', empresaRoutes);
     this.app.use('/webhook', botRoutes);
+    this.app.use('/push-tokens', pushTokenRoutes);
   }
 }
 

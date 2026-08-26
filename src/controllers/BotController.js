@@ -4,6 +4,7 @@ import Requisitante from '../models/Requisitante';
 import Chamados from '../models/Chamados';
 import Unidades from '../models/unidades';
 import Distritos from '../models/distritos';
+import sendPushNotification from '../utils/sendPushNotification';
 
 async function validarOuEncontrarUnidade(nomeUnidade) {
   if (!nomeUnidade) return null;
@@ -272,6 +273,13 @@ class BotController {
       if (io) {
         io.emit('novo_chamado', novoChamado);
       }
+
+      // Send push notification for new tickets
+      sendPushNotification(
+        `🚨 Novo Chamado (Bot): ${novoChamado.unidade}`,
+        `${problemaFormatado}`,
+        { chamadoId: novoChamado.id }
+      );
 
       return res.json({ success: true, chamado: novoChamado, requisitante });
     } catch (e) {

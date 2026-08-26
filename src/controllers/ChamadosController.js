@@ -3,6 +3,7 @@ import Unidades from '../models/unidades';
 import Equipamentos from '../models/equipamentos';
 import { Sequelize } from 'sequelize';
 import axios from 'axios';
+import sendPushNotification from '../utils/sendPushNotification';
 
 class ChamadosController {
   // Método para CRIAR ou ATUALIZAR o chamado vindo do app (Sincronização)
@@ -56,6 +57,12 @@ class ChamadosController {
       if (io) {
         if (created) {
           io.emit('novo_chamado', chamado);
+          // Send push notification for new tickets
+          sendPushNotification(
+            `🚨 Novo Chamado: ${chamado.unidade}`,
+            `${chamado.motivos?.[0] || 'Novo chamado recebido'}`,
+            { chamadoId: chamado.id }
+          );
         } else {
           io.emit('chamado_atualizado', chamado);
         }

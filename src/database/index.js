@@ -7,8 +7,9 @@ import Unidades from '../models/unidades';
 import Equipamentos from '../models/equipamentos';
 import Empresa from '../models/Empresa';
 import Requisitante from '../models/Requisitante';
+import PushToken from '../models/PushToken';
 
-const models = [User, Chamados, Distritos, Unidades, Equipamentos, Empresa, Requisitante];
+const models = [User, Chamados, Distritos, Unidades, Equipamentos, Empresa, Requisitante, PushToken];
 const connection = new Sequelize(databaseConfig);
 
 /*
