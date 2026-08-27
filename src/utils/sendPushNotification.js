@@ -12,6 +12,8 @@ export default async function sendPushNotification(title, body, data = {}) {
       title,
       body,
       data,
+      priority: 'high',
+      channelId: 'default'
     }));
 
     // Divisão em blocos de no máximo 100 mensagens conforme recomendação da Expo API
@@ -21,13 +23,14 @@ export default async function sendPushNotification(title, body, data = {}) {
     }
 
     for (const chunk of chunks) {
-      await axios.post('https://exp.host/--/api/v2/push/send', chunk, {
+      const response = await axios.post('https://exp.host/--/api/v2/push/send', chunk, {
         headers: {
           Accept: 'application/json',
           'Accept-encoding': 'gzip, deflate',
           'Content-Type': 'application/json',
         },
       });
+      console.log('Expo API Response:', JSON.stringify(response.data));
     }
 
     console.log(`Push notifications enviadas para ${tokens.length} dispositivos.`);
