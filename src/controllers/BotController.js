@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import Sequelize, { Op } from 'sequelize';
+import axios from 'axios';
 import Requisitante from '../models/Requisitante';
 import Chamados from '../models/Chamados';
 import Unidades from '../models/unidades';
@@ -153,6 +154,69 @@ class BotController {
       if (!telefone) {
         return res.status(400).json({ error: 'Telefone é obrigatório' });
       }
+
+      // --- INÍCIO: BLOQUEIO POR ASSINATURA PENDENTE ---
+      const chamadosPendentes = await Chamados.findAll({
+        where: {
+          status: 'concluido',
+          [Op.or]: [
+            { imgAssinaturaResponsavel: null },
+            { imgAssinaturaResponsavel: '' }
+          ],
+          obsTecnicas: {
+            [Op.like]: `%Telefone: ${telefone}%`
+          }
+        }
+      });
+
+      if (chamadosPendentes && chamadosPendentes.length > 0) {
+        const chamadoPendente = chamadosPendentes[0];
+        
+        // Gerar o link do chamado pendente
+        const IP_API = process.env.APP_URL || 'http://localhost';
+        const PORT = process.env.APP_PORT || 3000;
+        const baseUrl = process.env.PUBLIC_URL || `${IP_API}:${PORT}`;
+        const originalUrl = `${baseUrl}/assinatura/index.html?id=${chamadoPendente.id}`;
+        let urlAssinatura = originalUrl;
+        
+        try {
+          const shortUrlResponse = await axios.get(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(originalUrl)}`);
+          if (shortUrlResponse.data) {
+            urlAssinatura = shortUrlResponse.data;
+          }
+        } catch (err) {
+          console.error('Erro ao gerar link encurtado:', err.message);
+        }
+
+        const mensagem = `⚠️ *Aviso Importante:*\nVocê possui um chamado técnico anterior que já foi concluído e está *aguardando sua assinatura*.\n\nPara conseguir abrir um novo chamado, por favor, assine o termo de visita no link abaixo:\n${urlAssinatura}\n\nApós assinar, você poderá abrir novos chamados normalmente.`;
+
+        // Enviar a mensagem via Evolution API
+        const numeroLimpo = String(telefone).replace(/\D/g, '');
+        const evolutionBaseUrl = process.env.EVOLUTION_API_URL || 'http://localhost:8080';
+        const instanceName = req.body.instance_name || 'suporte-chamados';
+        const evolutionApiUrl = `${evolutionBaseUrl}/message/sendText/${instanceName}`;
+
+        try {
+          await axios.post(
+            evolutionApiUrl,
+            {
+              number: `55${numeroLimpo}`,
+              text: mensagem
+            },
+            {
+              headers: {
+                apikey: process.env.EVOLUTION_API_KEY || 'vitor123'
+              }
+            }
+          );
+        } catch (err) {
+          console.error('Erro ao avisar assinatura pendente:', err.message);
+        }
+
+        // Retornar status 400 para interromper o fluxo n8n e evitar a mensagem de sucesso
+        return res.status(400).json({ error: 'Assinatura pendente. Novo chamado bloqueado.' });
+      }
+      // --- FIM: BLOQUEIO POR ASSINATURA PENDENTE ---
       
       let requisitante = await Requisitante.findOne({ where: { telefone } });
       
