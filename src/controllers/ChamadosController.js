@@ -20,13 +20,22 @@ class ChamadosController {
       // --- Início: Auto-cadastro de Inventário ---
       try {
         if (unidade && numeroSerie && numeroSerie.trim() !== '' && numeroSerie.trim().toUpperCase() !== 'NÃO INFORMADO') {
+          // Extrair possível setor da string (ex: "Secretaria de Saúde - Setor RH")
+          let nomeUnidade = unidade.trim();
+          let nomeSetor = 'Não Especificado';
+          const matchSetor = nomeUnidade.match(/^(.*?) - Setor (.*)$/i);
+          if (matchSetor) {
+            nomeUnidade = matchSetor[1].trim();
+            nomeSetor = matchSetor[2].trim();
+          }
+
           // 1. Busca ou cria a unidade
           const [unidadeRecord] = await Unidades.findOrCreate({
-            where: { nome: unidade.trim() },
-            defaults: { nome: unidade.trim(), distrito_id: null }
+            where: { nome: nomeUnidade },
+            defaults: { nome: nomeUnidade, distrito_id: null }
           });
 
-          // 2. Busca ou cria o equipamento, vinculando à unidade
+          // 2. Busca ou cria o equipamento, vinculando à unidade e ao setor
           const serialFormatado = numeroSerie.trim().toUpperCase();
           const tipoEquipamento = equipamento ? equipamento.trim() : 'Não Especificado';
 
@@ -36,15 +45,20 @@ class ChamadosController {
               numero_serie: serialFormatado,
               modelo: tipoEquipamento,
               tipo: tipoEquipamento,
-              setor: 'Não Especificado',
+              setor: nomeSetor,
               unidade_id: unidadeRecord.id,
               status_operacional: 'ativo'
             }
           });
           
-          // Se o equipamento já existia mas mudou de unidade, atualiza o vínculo
-          if (!equipCreated && equip.unidade_id !== unidadeRecord.id) {
-            await equip.update({ unidade_id: unidadeRecord.id });
+          // Se o equipamento já existia mas mudou de unidade ou setor, atualiza o vínculo
+          if (!equipCreated) {
+            let updates = {};
+            if (equip.unidade_id !== unidadeRecord.id) updates.unidade_id = unidadeRecord.id;
+            if (equip.setor !== nomeSetor && nomeSetor !== 'Não Especificado') updates.setor = nomeSetor;
+            if (Object.keys(updates).length > 0) {
+              await equip.update(updates);
+            }
           }
         }
       } catch (invError) {
@@ -137,18 +151,32 @@ class ChamadosController {
       // Se o usuário solicitou a transferência do equipamento
       if (transferirEquipamento && unidade && chamado.numeroSerie && chamado.numeroSerie.trim().toUpperCase() !== 'NÃO INFORMADO') {
         try {
+          // Extrair possível setor da string
+          let nomeUnidade = unidade.trim();
+          let nomeSetor = 'Não Especificado';
+          const matchSetor = nomeUnidade.match(/^(.*?) - Setor (.*)$/i);
+          if (matchSetor) {
+            nomeUnidade = matchSetor[1].trim();
+            nomeSetor = matchSetor[2].trim();
+          }
+
           // 1. Busca ou cria a unidade de destino
           const [unidadeRecord] = await Unidades.findOrCreate({
-            where: { nome: unidade.trim() },
-            defaults: { nome: unidade.trim(), distrito_id: null }
+            where: { nome: nomeUnidade },
+            defaults: { nome: nomeUnidade, distrito_id: null }
           });
           
           // 2. Busca o equipamento pelo número de série associado ao chamado
           const serialFormatado = chamado.numeroSerie.trim().toUpperCase();
           const equip = await Equipamentos.findOne({ where: { numero_serie: serialFormatado }});
           
-          if (equip && equip.unidade_id !== unidadeRecord.id) {
-            await equip.update({ unidade_id: unidadeRecord.id });
+          if (equip) {
+            let updates = {};
+            if (equip.unidade_id !== unidadeRecord.id) updates.unidade_id = unidadeRecord.id;
+            if (equip.setor !== nomeSetor && nomeSetor !== 'Não Especificado') updates.setor = nomeSetor;
+            if (Object.keys(updates).length > 0) {
+              await equip.update(updates);
+            }
           }
         } catch (invError) {
           console.error('Erro ao transferir inventário no update:', invError);
