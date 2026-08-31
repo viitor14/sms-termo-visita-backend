@@ -146,6 +146,21 @@ class ChamadosController {
         return res.status(404).json({ error: 'Chamado não encontrado.' });
       }
 
+      // Preserva informações do Bot WhatsApp nas Observações Técnicas
+      if (chamado.obsTecnicas && chamado.obsTecnicas.includes('[Bot WhatsApp')) {
+        let novaObs = rest.obsTecnicas || '';
+        if (!novaObs.includes('[Bot WhatsApp')) {
+          if (novaObs.trim() === '') {
+            // Se o app mandou vazio, mantém o que estava no banco
+            rest.obsTecnicas = chamado.obsTecnicas;
+          } else {
+            // Se o app mandou algo novo, extrai apenas a parte original do bot (tudo antes de [Obs Técnico] se houver)
+            let botOriginal = chamado.obsTecnicas.split('\n\n[Obs Técnico]:')[0];
+            rest.obsTecnicas = `${botOriginal}\n\n[Obs Técnico]: ${novaObs.trim()}`;
+          }
+        }
+      }
+
       await chamado.update({ unidade, ...rest });
 
       // Se o usuário solicitou a transferência do equipamento

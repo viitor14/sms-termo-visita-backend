@@ -156,6 +156,15 @@ class BotController {
       }
 
       // --- INÍCIO: BLOQUEIO POR ASSINATURA PENDENTE ---
+      let requisitante = await Requisitante.findOne({ where: { telefone } });
+
+      const condicoesBusca = [
+        { obsTecnicas: { [Op.like]: `%Telefone: ${telefone}%` } }
+      ];
+      if (requisitante && requisitante.nome) {
+        condicoesBusca.push({ responsavelNome: requisitante.nome });
+      }
+
       const chamadosPendentes = await Chamados.findAll({
         where: {
           status: 'concluido',
@@ -163,9 +172,9 @@ class BotController {
             { imgAssinaturaResponsavel: null },
             { imgAssinaturaResponsavel: '' }
           ],
-          obsTecnicas: {
-            [Op.like]: `%Telefone: ${telefone}%`
-          }
+          [Op.and]: [
+            { [Op.or]: condicoesBusca }
+          ]
         }
       });
 
@@ -217,8 +226,6 @@ class BotController {
         return res.status(400).json({ error: 'Assinatura pendente. Novo chamado bloqueado.' });
       }
       // --- FIM: BLOQUEIO POR ASSINATURA PENDENTE ---
-      
-      let requisitante = await Requisitante.findOne({ where: { telefone } });
       
       // Se veio unidade informada, validar contra o cadastro oficial
       let unidadeOficialNome = null;
