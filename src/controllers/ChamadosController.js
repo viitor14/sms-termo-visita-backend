@@ -312,6 +312,7 @@ class ChamadosController {
       }
 
       const numeroLimpo = telefone.replace(/\D/g, '');
+      const numeroDestino = numeroLimpo.startsWith('55') ? numeroLimpo : `55${numeroLimpo}`;
       const IP_API = process.env.APP_URL || 'http://localhost';
       const PORT = process.env.APP_PORT || 3000;
       const baseUrl = process.env.PUBLIC_URL || `${IP_API}:${PORT}`;
@@ -336,7 +337,7 @@ class ChamadosController {
       await axios.post(
         evolutionApiUrl,
         {
-          number: `55${numeroLimpo}`,
+          number: numeroDestino,
           text: mensagem
         },
         {

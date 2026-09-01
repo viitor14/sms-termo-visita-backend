@@ -201,6 +201,7 @@ class BotController {
 
         // Enviar a mensagem via Evolution API
         const numeroLimpo = String(telefone).replace(/\D/g, '');
+        const numeroDestino = numeroLimpo.startsWith('55') ? numeroLimpo : `55${numeroLimpo}`;
         const evolutionBaseUrl = process.env.EVOLUTION_API_URL || 'http://localhost:8080';
         const instanceName = req.body.instance_name || 'suporte-chamados';
         const evolutionApiUrl = `${evolutionBaseUrl}/message/sendText/${instanceName}`;
@@ -209,7 +210,7 @@ class BotController {
           await axios.post(
             evolutionApiUrl,
             {
-              number: `55${numeroLimpo}`,
+              number: numeroDestino,
               text: mensagem
             },
             {
