@@ -197,7 +197,7 @@ class BotController {
           console.error('Erro ao gerar link encurtado:', err.message);
         }
 
-        const mensagem = `⚠️ *Aviso Importante:*\nVocê possui um chamado técnico anterior que já foi concluído e está *aguardando sua assinatura*.\n\nPara conseguir abrir um novo chamado, por favor, assine o termo de visita no link abaixo:\n${urlAssinatura}\n\nApós assinar, você poderá abrir novos chamados normalmente.`;
+        const mensagem = `⚠️ *Aviso Importante:*\nVocê possui um chamado técnico anterior que já foi concluído e está *aguardando sua assinatura*.\n\nPara conseguir abrir um novo chamado, por favor, assine o termo de visita no link abaixo:\n${urlAssinatura}\n\nApós assinar o link, *por favor, digite novamente o seu problema técnico aqui no WhatsApp* para que o bot possa registrar o seu novo chamado.`;
 
         // Enviar a mensagem via Evolution API
         const numeroLimpo = String(telefone).replace(/\D/g, '');
