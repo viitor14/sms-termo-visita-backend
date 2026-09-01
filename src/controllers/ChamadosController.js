@@ -15,8 +15,22 @@ class ChamadosController {
         return res.status(400).json({ error: 'O ID do chamado é obrigatório.' });
       }
 
-      const [chamado, created] = await Chamados.upsert(req.body);
+      let dataToSave = { ...req.body };
 
+      if (id) {
+        const chamadoExistente = await Chamados.findByPk(id);
+        if (chamadoExistente) {
+          // Protege os campos do bot caso o aplicativo envie vazio ao não preencher o formulário
+          if (!dataToSave.responsavelNome || dataToSave.responsavelNome.trim() === '') {
+            dataToSave.responsavelNome = chamadoExistente.responsavelNome;
+          }
+          if (!dataToSave.obsTecnicas || dataToSave.obsTecnicas.trim() === '') {
+            dataToSave.obsTecnicas = chamadoExistente.obsTecnicas;
+          }
+        }
+      }
+
+      const [chamado, created] = await Chamados.upsert(dataToSave);
       // --- Início: Auto-cadastro de Inventário ---
       try {
         if (unidade && numeroSerie && numeroSerie.trim() !== '' && numeroSerie.trim().toUpperCase() !== 'NÃO INFORMADO') {
