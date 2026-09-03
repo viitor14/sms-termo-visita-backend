@@ -66,6 +66,10 @@ export default class Chamados extends Model {
           type: Sequelize.STRING,
           defaultValue: '',
         },
+        tecnicoAuxiliar: {
+          type: Sequelize.STRING,
+          defaultValue: '',
+        },
         status: {
           type: Sequelize.STRING,
           defaultValue: 'concluido',
