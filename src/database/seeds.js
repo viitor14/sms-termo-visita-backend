@@ -5,13 +5,17 @@ export async function seedMasterUser() {
   try {
     const adminExists = await User.findOne({ where: { role: 'master' } });
     if (!adminExists) {
+      const senhaPadrao = process.env.DEFAULT_MASTER_PASSWORD || Math.random().toString(36).slice(-10);
       await User.create({
         nome: 'Administrador Master',
         email: 'admin@sms.com',
-        password: 'admin123',
+        password: senhaPadrao,
         role: 'master',
       });
-      console.log('Usuário master padrão criado: admin@sms.com / admin123');
+      console.log(`Usuário master padrão criado: admin@sms.com / ${senhaPadrao}`);
+      if (!process.env.DEFAULT_MASTER_PASSWORD) {
+        console.warn('⚠️ AVISO DE SEGURANÇA: Senha padrão gerada aleatoriamente. Por favor, anote-a e mude o quanto antes.');
+      }
     }
   } catch (error) {
     console.error('Erro ao fazer seed do usuário master:', error);

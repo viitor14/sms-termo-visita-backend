@@ -27,7 +27,11 @@ export default async (req, res, next) => {
 
   // 2. Se não tem JWT, tenta validar via API Key (App Mobile)
   const apiKeyRecebida = req.headers['x-api-key'];
-  const CHAVE_OFICIAL = process.env.TOKEN_SECRET;
+  const CHAVE_OFICIAL = process.env.MOBILE_API_KEY;
+
+  if (!CHAVE_OFICIAL) {
+    console.warn("[Segurança] MOBILE_API_KEY não está configurada no .env!");
+  }
 
   if (apiKeyRecebida && apiKeyRecebida === CHAVE_OFICIAL) {
     // Acesso via App Mobile
