@@ -1,5 +1,6 @@
 import Sequelize, { Model } from 'sequelize';
 import bcryptjs from 'bcryptjs';
+import { encryptString, decryptString } from '../utils/crypto.js';
 
 export default class Chamados extends Model {
   static init(sequelize) {
@@ -33,10 +34,24 @@ export default class Chamados extends Model {
         imgAssinaturaResponsavel: {
           type: Sequelize.TEXT('long'),
           allowNull: true,
+          get() {
+            const rawValue = this.getDataValue('imgAssinaturaResponsavel');
+            return decryptString(rawValue);
+          },
+          set(value) {
+            this.setDataValue('imgAssinaturaResponsavel', encryptString(value));
+          }
         },
         imgAssinaturaTecnico: {
           type: Sequelize.TEXT('long'),
           allowNull: true,
+          get() {
+            const rawValue = this.getDataValue('imgAssinaturaTecnico');
+            return decryptString(rawValue);
+          },
+          set(value) {
+            this.setDataValue('imgAssinaturaTecnico', encryptString(value));
+          }
         },
         matricula: {
           type: Sequelize.STRING,
