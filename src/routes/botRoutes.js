@@ -15,4 +15,7 @@ routes.post('/bot/registrar', BotController.registrarUsuario);
 // Endpoint para n8n registrar chamado
 routes.post('/bot/chamado', BotController.criarChamado);
 
+// Endpoint (Agrupador/Debouncer) para receber Webhooks da Evolution API
+routes.post('/bot/webhook/evolution', BotController.receberWebhookEvolution);
+
 export default routes;

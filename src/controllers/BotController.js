@@ -7,6 +7,8 @@ import Unidades from '../models/unidades';
 import Distritos from '../models/distritos';
 import sendPushNotification from '../utils/sendPushNotification';
 
+const activeDebounceSessions = new Map();
+
 async function validarOuEncontrarUnidade(nomeUnidade) {
   if (!nomeUnidade) return null;
   const cleanName = String(nomeUnidade).trim();
@@ -357,6 +359,100 @@ class BotController {
     } catch (e) {
       console.error('Erro ao criar chamado via bot:', e);
       return res.status(500).json({ error: 'Erro ao criar chamado via bot', details: e.message });
+    }
+  }
+
+  async receberWebhookEvolution(req, res) {
+    try {
+      const webhookData = req.body;
+      
+      // Responde rápido para a Evolution API não dar timeout
+      res.status(200).send('OK');
+
+      // Extração robusta do Telefone / remoteJid
+      const rawJid = webhookData?.data?.key?.remoteJid || webhookData?.sender || webhookData?.from || webhookData?.phone || '';
+      const userPhone = String(rawJid).replace('@s.whatsapp.net', '').replace('@g.us', '').trim();
+      
+      if (!userPhone) return;
+
+      // Extração robusta da Mensagem
+      const rawMsg = webhookData?.data?.message?.conversation 
+        || webhookData?.data?.message?.extendedTextMessage?.text 
+        || webhookData?.data?.message?.imageMessage?.caption 
+        || webhookData?.message 
+        || webhookData?.text 
+        || '';
+        
+      const userMessage = String(rawMsg).trim();
+      const hasMedia = !!(webhookData?.data?.message?.imageMessage || webhookData?.data?.message?.audioMessage || webhookData?.data?.message?.documentMessage);
+      
+      // Se for apenas evento de sistema ou sem texto e sem mídia, ignora
+      if (!userMessage && !hasMedia) return;
+
+      const N8N_URL = process.env.N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/whatsapp-webhook';
+
+      // Pega a sessão ativa do usuário ou cria uma nova
+      let session = activeDebounceSessions.get(userPhone);
+
+      if (session) {
+        // Limpa o timer anterior
+        clearTimeout(session.timer);
+        // Concatena a mensagem se houver texto
+        if (userMessage) {
+          session.messages.push(userMessage);
+        }
+        // Atualiza para o payload mais recente (ex: se enviou uma mídia por último)
+        session.lastPayload = webhookData;
+      } else {
+        session = {
+          messages: userMessage ? [userMessage] : [],
+          lastPayload: webhookData,
+          timer: null
+        };
+        activeDebounceSessions.set(userPhone, session);
+      }
+
+      // Define um novo timer de 4000ms
+      session.timer = setTimeout(async () => {
+        // Quando o timer estourar, preparamos o payload final
+        const finalSession = activeDebounceSessions.get(userPhone);
+        if (!finalSession) return;
+        
+        activeDebounceSessions.delete(userPhone);
+        
+        const finalPayload = { ...finalSession.lastPayload };
+        const joinedMessage = finalSession.messages.join(' \\n ');
+        
+        // Injeta a mensagem combinada de volta no payload
+        if (finalPayload.data && finalPayload.data.message) {
+          if (finalPayload.data.message.conversation) {
+            finalPayload.data.message.conversation = joinedMessage;
+          } else if (finalPayload.data.message.extendedTextMessage) {
+            finalPayload.data.message.extendedTextMessage.text = joinedMessage;
+          } else if (finalPayload.data.message.imageMessage && finalPayload.data.message.imageMessage.caption !== undefined) {
+            finalPayload.data.message.imageMessage.caption = joinedMessage;
+          } else {
+             // Força inserção
+            finalPayload.data.message.conversation = joinedMessage;
+          }
+        } else {
+           finalPayload.text = joinedMessage;
+        }
+
+        try {
+          // Envia para o n8n
+          await axios.post(N8N_URL, finalPayload);
+          console.log(`[DEBOUNCER] Mensagem agrupada enviada para n8n (${userPhone})`);
+        } catch (err) {
+          console.error(`[DEBOUNCER] Erro ao enviar para n8n (${userPhone}):`, err.message);
+        }
+      }, 4000);
+
+    } catch (error) {
+      console.error('Erro no debouncer do webhook:', error);
+      if (!res.headersSent) {
+         return res.status(500).json({ error: 'Erro interno no debouncer' });
+      }
     }
   }
 }
